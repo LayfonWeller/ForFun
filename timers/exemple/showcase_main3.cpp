@@ -29,12 +29,12 @@ static auto factory(const int timer_id) {
         case 2:
             return create_te_timer<dbgtimer<timer0_traits>>(
                 timer0_traits::clock_select::clk_8,
-                static_cast<std::uint8_t>(200));
+                200);
 
         default:
             return create_te_timer<dbgtimer<timer1_traits>>(
                 timer1_traits::clock_select::clk_8,
-                static_cast<std::uint8_t>(200));
+                200);
     }
 }
 
@@ -44,7 +44,7 @@ static void printTimerCount(const IsTimer auto& a) {
 
 
 int main(const int argc, char**) {
-    const IsTimer timer = factory(argc);
+    const IsTimer auto timer = factory(argc);
     printTimerCount(timer);
     return 0;
 }

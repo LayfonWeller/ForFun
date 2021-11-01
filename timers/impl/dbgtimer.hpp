@@ -3,12 +3,12 @@
 
 #include <atomic>
 
-template <typename timer_traits>
+template <typename timer_traits_>
 class dbgtimer {
    public:
     using count_t = typename timer_traits::count_t;
     using clock_select = typename timer_traits::clock_select;
-    static constexpr timer_traits traits{};
+    using timer_traits = typename timer_traits_;
 
     constexpr dbgtimer(clock_select cs,
                             typename timer_traits::count_t max) {}
