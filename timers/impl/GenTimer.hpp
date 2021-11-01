@@ -1,7 +1,9 @@
 #ifndef GEN_TIMER_HPP
 #define GEN_TIMER_HPP
 
-#include <<utility>
+#include <concepts>
+#include <utility>
+
 template <std::integral type>
 class GenTimer_te
 {
