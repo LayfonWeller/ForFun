@@ -1,5 +1,7 @@
 
-#pragma once
+#ifndef TIMER_HPP
+#define TIMER_HPP
+
 
 #include <concepts>
 
@@ -10,10 +12,16 @@
  * @tparam T
  */
 template <typename T>
-concept IsTimer = requires(const T t) {
-    { t.get_count() } -> std::same_as<typename T::count_t>;
-    {T::timer_traits};
-    {T::clock_select};
+concept IsTimer = requires(const T t)
+{
+    {
+        t.get_count()
+        } -> std::same_as<typename T::count_t>;
+}
+&&std::is_enum_v<typename T::clock_select> &&requires(
+    typename T::timer_traits t)
+{
+    t;
 };
 
 /**
@@ -24,4 +32,4 @@ concept IsTimer = requires(const T t) {
  */
 template <typename T, typename count = typename T::count_t>
 concept IsTimer_t = std::same_as<typename T::count_t, count> && IsTimer<T>;
-
+#endif // !TIMER_HPP

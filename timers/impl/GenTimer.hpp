@@ -1,6 +1,7 @@
-#pragma once
+#ifndef GEN_TIMER_HPP
+#define GEN_TIMER_HPP
 
-
+#include <<utility>
 template <std::integral type>
 class GenTimer_te
 {
@@ -78,3 +79,5 @@ create_te_timer(Args &&...args)
     return GenTimer_te<typename timer_impl::count_t>(
         timer_impl(std::forward<Args>(args)...));
 }
+
+#endif

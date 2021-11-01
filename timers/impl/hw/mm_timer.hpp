@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MM_TIMER_HPP
+#define MM_TIMER_HPP
 
 #include <cstdint>
 
@@ -44,3 +45,5 @@ class mm_timer {
     };
     regs* m_regs;
 };
+
+#endif

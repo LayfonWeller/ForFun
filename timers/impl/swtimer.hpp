@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SWTIMER_HPP
+#define SWTIMER_HPP
 
 #include <thread>
 #include <atomic>
@@ -39,3 +40,5 @@ private:
     std::atomic<count_t> TCNT{0};
     std::jthread thread;
 };
+
+#endif

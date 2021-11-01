@@ -1,5 +1,7 @@
-#pragma once
+#ifndef DBGTIMER_HPP
+#define DBGTIMER_HPP
 
+#include <atomic>
 
 template <typename timer_traits>
 class dbgtimer_impl {
@@ -22,3 +24,5 @@ class dbgtimer_impl {
    private:
     std::atomic<count_t> TCNT{0};
 };
+
+#endif
