@@ -27,12 +27,12 @@ struct timer1_traits {
 static auto factory(const int timer_id) {
     switch (timer_id) {
         case 2:
-            return create_te_timer<dgbtimer<timer0_traits>>(
+            return create_te_timer<dbgtimer<timer0_traits>>(
                 timer0_traits::clock_select::clk_8,
                 static_cast<std::uint8_t>(200));
 
         default:
-            return create_te_timer<dgbtimer<timer1_traits>>(
+            return create_te_timer<dbgtimer<timer1_traits>>(
                 timer1_traits::clock_select::clk_8,
                 static_cast<std::uint8_t>(200));
     }

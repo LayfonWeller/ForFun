@@ -17,6 +17,6 @@ struct timer0_traits
 int main()
 {
     const GenTimer_te<std::uint8_t> timer =
-        create_te_timer<dgbtimer<timer0_traits>>(timer0_traits::clock_select::clk_8, 200);
+        create_te_timer<dbgtimer<timer0_traits>>(timer0_traits::clock_select::clk_8, 200);
     return timer.get_count();
 }

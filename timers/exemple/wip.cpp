@@ -219,19 +219,19 @@ class swtimer_impl {
 };
 
 template <typename timer_traits>
-class dbgtimer_impl {
+class dbgtimer {
    public:
     using count_t = typename timer_traits::count_t;
     using clock_select = typename timer_traits::clock_select;
     static constexpr timer_traits traits{};
 
-    constexpr dbgtimer_impl(clock_select cs,
+    constexpr dbgtimer(clock_select cs,
                             typename timer_traits::count_t max) {}
 
-    constexpr ~dbgtimer_impl() = default;
+    constexpr ~dbgtimer() = default;
 
-    dbgtimer_impl(const dbgtimer_impl&) = delete;
-    dbgtimer_impl& operator=(const dbgtimer_impl&) = delete;
+    dbgtimer(const dbgtimer&) = delete;
+    dbgtimer& operator=(const dbgtimer&) = delete;
 
     count_t get_count() const { return TCNT; }
     void inc_count(const count_t tick) { TCNT += tick; }
@@ -431,7 +431,7 @@ int main(const int argc, const char* argv[]) {
     // static_cast<std::uint8_t>(200));
     // auto& timer2 = *timer2_unique;
 
-    auto swtimer = dbgtimer_impl<timer2_traits>(
+    auto swtimer = dbgtimer<timer2_traits>(
         timer2_traits::clock_select::clk_8, static_cast<std::uint8_t>(200));
     printTimerCount(swtimer);
 

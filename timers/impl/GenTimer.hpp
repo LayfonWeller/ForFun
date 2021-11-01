@@ -3,6 +3,7 @@
 
 #include <concepts>
 #include <utility>
+#include <memory>
 
 template <std::integral type>
 class GenTimer_te
