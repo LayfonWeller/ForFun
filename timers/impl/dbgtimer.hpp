@@ -4,24 +4,25 @@
 #include <atomic>
 
 template <typename timer_traits_>
-class dbgtimer {
-   public:
+class dbgtimer
+{
+public:
+    using timer_traits = typename timer_traits_;
     using count_t = typename timer_traits::count_t;
     using clock_select = typename timer_traits::clock_select;
-    using timer_traits = typename timer_traits_;
 
     constexpr dbgtimer(clock_select cs,
-                            typename timer_traits::count_t max) {}
+                       typename timer_traits::count_t max) {}
 
     constexpr ~dbgtimer() = default;
 
-    dbgtimer(const dbgtimer&) = delete;
-    dbgtimer& operator=(const dbgtimer&) = delete;
+    dbgtimer(const dbgtimer &) = delete;
+    dbgtimer &operator=(const dbgtimer &) = delete;
 
     count_t get_count() const { return TCNT; }
     void inc_count(const count_t tick) { TCNT += tick; }
 
-   private:
+private:
     std::atomic<count_t> TCNT{0};
 };
 
