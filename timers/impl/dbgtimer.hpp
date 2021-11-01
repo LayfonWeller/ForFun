@@ -7,7 +7,7 @@ template <typename timer_traits_>
 class dbgtimer
 {
 public:
-    using timer_traits = typename timer_traits_;
+    using timer_traits = timer_traits_;
     using count_t = typename timer_traits::count_t;
     using clock_select = typename timer_traits::clock_select;
 
