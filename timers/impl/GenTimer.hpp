@@ -19,6 +19,12 @@ public:
     {
     }
 
+    constexpr ~GenTimer_te() = default;
+    constexpr GenTimer_te(GenTimer_te&& ) = default;
+    constexpr GenTimer_te(const GenTimer_te&) = delete;
+    constexpr GenTimer_te& operator=(GenTimer_te&&) = default;
+    constexpr GenTimer_te& operator=(const GenTimer_te&) = delete;
+
     template <IsTimerImpl timer_impl>
     requires std::is_same_v<typename timer_impl::count_t, count_t>
     constexpr GenTimer_te(timer_impl &&arg)
@@ -45,8 +51,9 @@ private:
     struct TimerCreated final : public TimerModel
     {
         constexpr TimerCreated(timer_impl &&timer) : m_a(std::move(timer)) {}
+        constexpr ~TimerCreated() = default;
 
-        constexpr virtual count_t get_count() const noexcept(noexcept(m_a.get_count())) final { return m_a.get_count(); }
+        constexpr virtual count_t get_count() const final { return m_a.get_count(); }
 
         timer_impl m_a;
     };
@@ -55,10 +62,12 @@ private:
     {
         constexpr TimerWrapper(const timer_impl &a) : m_a(std::cref(a)) {}
 
-        constexpr virtual count_t get_count() const noexcept(noexcept(m_a.get_count())) final
+        constexpr virtual count_t get_count() const final
         {
             return m_a.get().get_count();
         }
+
+        constexpr ~TimerWrapper() = default;
 
         std::reference_wrapper<const timer_impl> m_a;
     };

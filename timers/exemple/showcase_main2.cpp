@@ -2,10 +2,11 @@
 #include "../impl/dbgtimer.hpp"
 #include "../impl/GenTimer.hpp"
 
+// https://godbolt.org/z/46zPzj6hW
+
 struct timer0_traits
 {
     using count_t = std::uint8_t;
-    static constexpr uint8_t TIMSK{0x6E};
     enum class clock_select : std::uint8_t
     {
         clk_off,

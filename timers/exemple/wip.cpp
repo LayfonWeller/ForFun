@@ -13,7 +13,6 @@ std::uint16_t reg4[5] = {0x03, 0x13, 0x23, 0x33, 0x42};;
 
 struct timer0_traits {
     using count_t = std::uint8_t;
-    static constexpr uint8_t TIMSK{0x6E};
     static constexpr std::uint8_t* addr = reg;
     enum class clock_select : std::uint8_t {
         clk_off,
@@ -24,7 +23,6 @@ struct timer0_traits {
 
 struct timer1_traits {
     using count_t = std::uint8_t;
-    static constexpr uint8_t TIMSK{0x6E};
     static constexpr std::uint8_t* addr = reg2;
     enum class clock_select : std::uint8_t {
         clk_off,
@@ -35,7 +33,6 @@ struct timer1_traits {
 
 struct timer2_traits {
     using count_t = std::uint8_t;
-    static constexpr uint8_t TIMSK{0x6E};
     static constexpr std::uint8_t* addr = reg3;
     enum class clock_select : std::uint8_t {
         clk_off,
@@ -46,7 +43,6 @@ struct timer2_traits {
 
 struct timer3_traits {
     using count_t = std::uint16_t;
-    static constexpr uint8_t TIMSK{0x6E};
     static constexpr std::uint16_t* addr = reg4;
     enum class clock_select : std::uint8_t {
         clk_off,

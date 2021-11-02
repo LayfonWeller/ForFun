@@ -6,6 +6,7 @@
 template<typename T>
 concept mem_map_traits = requires(){
     {T::addr};
+    {T::TIMSK};
 };
 
 template <mem_map_traits timer_traits_>

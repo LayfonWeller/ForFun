@@ -1,3 +1,5 @@
+// https://godbolt.org/z/G716Kqn1e
+
 #include "../timers.hpp"
 #include "../impl/hw/mm_timer.hpp"
 
