@@ -5,7 +5,7 @@
 
 template<typename T>
 concept mem_map_traits = requires(){
-    {timer_traits::addr};
+    {T::addr};
 };
 
 template <mem_map_traits timer_traits_>

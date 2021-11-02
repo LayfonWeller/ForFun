@@ -1,5 +1,5 @@
 #include "../timers.hpp"
-#include "../impl/dgbtimer.hpp"
+#include "../impl/dbgtimer.hpp"
 #include "../impl/GenTimer.hpp"
 
 struct timer0_traits

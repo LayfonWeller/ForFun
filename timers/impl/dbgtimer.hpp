@@ -11,19 +11,21 @@ public:
     using count_t = typename timer_traits::count_t;
     using clock_select = typename timer_traits::clock_select;
 
-    constexpr dbgtimer(clock_select cs,
-                       typename timer_traits::count_t max) {}
+    constexpr dbgtimer(const clock_select cs,
+                       const typename timer_traits::count_t max) {}
 
     constexpr ~dbgtimer() = default;
 
-    dbgtimer(const dbgtimer &) = delete;
-    dbgtimer &operator=(const dbgtimer &) = delete;
+    constexpr dbgtimer(const dbgtimer &) = delete;
+    constexpr dbgtimer &operator=(const dbgtimer &) = delete;
+    constexpr dbgtimer(dbgtimer&& a) = default;
+    constexpr dbgtimer& operator=(dbgtimer&& a) = default;
 
-    count_t get_count() const { return TCNT; }
-    void inc_count(const count_t tick) { TCNT += tick; }
+    constexpr count_t get_count() const { return TCNT; }
+    constexpr void inc_count(const count_t tick) { TCNT += tick; }
 
 private:
-    std::atomic<count_t> TCNT{0};
+    count_t TCNT{0};
 };
 
 #endif
