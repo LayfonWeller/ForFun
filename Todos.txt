@@ -545,48 +545,6 @@ struct recursive_shared_mtx
 /// PROJECT 8
 #include <variant>
 
-namespace core_tech {
-template <typename T>
-struct is_variant : std::false_type {};
-
-template <typename... Args>
-struct is_variant<std::variant<Args...>> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_variant_v = is_variant<T>::value;
-
-template <typename T>
-concept variant_t = is_variant_v<T>;
-
-namespace details {
-
-template <typename SubType, typename VariantType,
-          auto pos = std::variant_size_v<VariantType>>
-    requires is_variant_v<VariantType>
-[[nodiscard]] consteval bool is_in_variant_impl() noexcept {
-    if constexpr (std::same_as<SubType, std::variant_alternative_t<
-                                            pos - 1, VariantType>>) {
-        return true;
-    }
-
-    if constexpr (pos > 1) {
-        return is_in_variant_impl<SubType, VariantType, pos - 1>();
-    }
-
-    return false;
-}
-
-}  // namespace details
-
-template <typename T1, typename T2, typename T10 = std::remove_cvref_t<T1>,
-          typename T20 = std::remove_cvref_t<T2>>
-concept is_in_variant = (is_variant_v<T20> &&
-                         details::is_in_variant_impl<T1, T20>()) ||
-                        (is_variant_v<T10> &&
-                         details::is_in_variant_impl<T2, T10>());
-
-}  // namespace core_tech
-
 template <typename D, typename... Ts>
 struct variant_enum : public D {
     using type_t = std::variant<Ts...>;
@@ -597,23 +555,23 @@ struct variant_enum : public D {
     constexpr variant_enum(variant_enum&& other) noexcept = default;
 
     constexpr variant_enum(
-        core_tech::is_in_variant<type_t> auto const& other) noexcept {
+        is_in_variant<type_t> auto const& other) noexcept {
         type = type_t{other};
     }
 
     constexpr variant_enum(
-        core_tech::is_in_variant<type_t> auto&& other) noexcept {
+        is_in_variant<type_t> auto&& other) noexcept {
         type = type_t{other};
     }
 
     constexpr variant_enum& operator=(
-        core_tech::is_in_variant<type_t> auto const& other) noexcept {
+        is_in_variant<type_t> auto const& other) noexcept {
         type = other;
         return *this;
     }
 
     constexpr variant_enum& operator=(
-        core_tech::is_in_variant<type_t> auto&& other) noexcept {
+        is_in_variant<type_t> auto&& other) noexcept {
         type = CORE_FWD(other);
         return *this;
     }
@@ -633,7 +591,7 @@ struct variant_enum : public D {
         return *this;
     }
 
-    template <core_tech::is_in_variant<type_t> T>
+    template <is_in_variant<type_t> T>
     [[nodiscard]] constexpr bool operator==(T const&) const noexcept {
         return std::holds_alternative<T>(type);
     }
