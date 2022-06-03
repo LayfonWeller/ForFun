@@ -1,0 +1,686 @@
+#include <vector>
+
+struct A {
+    int a;
+    int b;
+};
+
+template <typename T>
+struct const_of {
+    // constexpr const_of(T t_v) : v(std::move(t_v)) {}
+
+    template <typename... Args>
+    requires(std::is_constructible_v<T, Args...>)
+    constexpr const_of(Args... args)
+    noexcept (noexcept (std::is_nothrow_constructible_v<T, Args...>))
+    : v(T{std::forward<Args>(args)...}) {}
+
+    using type = std::add_const_t<T>;
+    T v;
+    constexpr operator type() const noexcept { return v; }
+
+    constexpr operator T&&() noexcept (noexcept (std::is_nothrow_move_assignable_v<T>))
+     { return std::move(v); }
+
+    constexpr type& operator&() const noexcept { return v; }
+
+    constexpr type* operator->() const noexcept { return &v; }
+
+    constexpr type operator*() const noexcept { return v; }
+};
+
+int main() {
+    std::vector<const_of<A>> v;
+    v.resize(5);
+    v.emplace_back(1, 3);
+    // v.emplace_back(A{1, 3});
+    v.push_back(const_of<A>{2, 3});
+    auto& a = *v[0];
+    // const int& b = v[0];
+    // static_assert(a == 2);
+    return a.a + a.b;
+}
+
+
+/// PROJECT 2
+
+#include <string_view>
+#include <concepts>
+#include <map>
+#include <memory>
+#include <ranges>
+#include <vector>
+
+template<class T>
+concept StringLike = std::convertible_to<T, std::string_view>;
+
+std::vector<std::string_view> split(std::string_view const t_sv)
+{
+    return std::vector<std::string_view>;
+}
+
+template <typename T>
+struct structured_data_formatter {
+    constexpr operator T&() { return m_t; };
+    constexpr bool parse(std::string_view const t_sv)
+    {
+        if constexpr (std::ranges::range<T>) {
+            const auto splitted = split(t_sv);
+            return true;
+        }
+        if constexpr (StringLike<T>) {
+            m_t = t_sv;
+            return true;
+        }
+        if constexpr (requires(std::string_view sv, T t){
+            {from_string(sv, t)} -> std::convertible_to<bool>;
+        }) {
+            return from_string(t_sv, m_t);
+        }
+    }
+
+    T m_t;
+};
+
+class structured_data_te
+{
+public:
+
+    template <typename T>
+    structured_data_te(const structured_data_formatter<T> &t_t)
+
+        : pimpl(std::make_unique<TimerCreated<structured_data_formatter<T>>>(t_t))
+    {
+    }
+
+    ~structured_data_te() = default;
+    structured_data_te(structured_data_te&& ) = default;
+    structured_data_te(const structured_data_te&) = delete;
+    structured_data_te& operator=(structured_data_te&&) = default;
+    structured_data_te& operator=(const structured_data_te&) = delete;
+
+    // template <IsTimerImpl timer_impl>
+    // requires std::is_same_v<typename timer_impl::count_t, count_t>
+    // constexpr GenTimer_te(timer_impl &&arg)
+    //     : pimpl(std::make_unique<TimerCreated<timer_impl>>(
+    //           std::forward<timer_impl>(arg)))
+    // {
+    // }
+
+    bool parse() const
+    {
+        return this->pimpl->parse();
+    }
+
+private:
+    struct TimerModel
+    {
+        constexpr virtual ~TimerModel() = default;
+        constexpr virtual bool parse() = 0;
+        constexpr TimerModel() = default;
+        constexpr TimerModel(const TimerModel &) = delete;
+        constexpr TimerModel &operator=(const TimerModel &) = delete;
+    };
+    template <typename T>
+    struct TimerCreated final : public TimerModel
+    {
+        constexpr TimerCreated(T &&timer) : m_a(std::move(timer)) {}
+        constexpr ~TimerCreated() = default;
+
+        constexpr virtual bool parse() final { return m_a.parse(); }
+
+        T m_a;
+    };
+    // template <typename timer_impl>
+    // struct TimerWrapper final : public TimerModel
+    // {
+    //     constexpr TimerWrapper(const timer_impl &a) : m_a(std::cref(a)) {}
+
+    //     constexpr virtual count_t get_count() const final
+    //     {
+    //         return m_a.get().get_count();
+    //     }
+
+    //     constexpr ~TimerWrapper() = default;
+
+    //     std::reference_wrapper<const timer_impl> m_a;
+    // };
+
+    std::unique_ptr<TimerModel> pimpl;
+};
+
+/// PROJECT 3
+
+
+// #include <utility>
+
+// template<typename F>
+// struct multi_call
+// {
+//     template<typename R, typename... Args>
+//     struct function_info {
+//         using args_t = std::tuple<Args...>;
+//         using return_t = R;
+//     };
+
+//     multi_call(F t_f)
+//     : f(std::move(t_f))
+//     {}
+
+//     struct call_instance
+//     {
+//         function_info<F>::args_t args;
+//         template<typename... Args>
+//         call_instance(Args... t_args)
+//         : args(std::forward<t_args>...) {}
+//     };
+
+//     template<typename... T>
+//     decltype(auto) operator()(T&&... t)
+//     {
+//         return std::make_tuple(call_one(std::forward(t))...);
+//     }
+
+//     function_info<F>::return_t call_one(call_instance&& t_c_i) {
+//         return f(std::get<0>(t_c_i.args));
+//     }
+
+//     F f;
+// };
+
+// int main()
+// {
+
+//     multi_call mc_1([](int a){return a;});
+
+//     mc_1(1);
+// }
+
+
+
+/// PROJECT 4
+template <nullary_function F>
+struct on_last_thread_exit
+{
+    static inline constexpr bool is_nothrow = std::is_nothrow_invocable_v<F>;
+
+    template <nullary_function F0>
+    constexpr explicit on_scope_exit(F0&& f) noexcept(std::is_nothrow_constructible_v<F, F0&&>)
+        : m_f(CORE_FWD(f))
+    {
+    }
+
+    ~on_last_thread_exit() = default;
+
+    void lock_shared()
+    {
+        m_exclusive.wait(true);
+    }
+    bool try_lock_shared()
+    {
+        if (m_exclusive.load())
+            return false;
+    }
+    void unlock_shared()
+    {
+    }
+private:
+    F    m_f;
+    std::atomic_uint64_t m_count {};
+    std::atomic_bool     m_exclusive { false };
+};
+
+/// PROJECT 5
+
+#include <atomic>
+// #include <concepts>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <shared_mutex>
+
+template <typename T>
+concept Lockable = requires(T t) {
+                       t.lock();
+                       t.unlock();
+                   };
+
+template <typename T>
+concept ShareLockable = requires(T t) {
+                            t.lock_shared();
+                            t.unlock_shared();
+                        } && Lockable<T>;
+
+// template <Lockable L>
+// struct Mutex_Protector {
+
+// };
+
+template <class B, class C>
+concept static_castable =  // exposition only
+    requires(B b) {
+        { static_cast<C>(b) } -> std::same_as<C>;
+    };
+
+template <typename T, typename U>
+concept convert_implicit = requires(T t) {
+                               { t } -> std::convertible_to<U>;
+                           };
+
+static_assert(static_castable<std::unique_ptr<int>, bool>);
+
+template <typename T, Lockable L = std::mutex>
+struct MutexProtected {
+    mutable L mut{};
+    T d{};
+
+    template <template <Lockable> typename Lock, typename T2>
+    struct ProtectedData {
+        T2& d;
+        Lock<L> l;
+
+        ProtectedData(T2& d, L& mut)
+            : d(d),
+              l(mut)
+
+        {}
+
+        ProtectedData(ProtectedData const&) = delete;
+        ProtectedData(ProtectedData&& pd) {
+            l = std::move(pd.l);
+            d = std::move(pd.d);
+        }
+
+        ProtectedData& operator=(ProtectedData const&) = delete;
+        ProtectedData& operator=(ProtectedData&& pd) {
+            l = std::move(pd.l);
+            d = std::move(pd.d);
+        }
+
+        T2& operator->() { return d; }
+
+        T2 const& operator->() const { return d; }
+
+        T2& operator*() { return d; }
+
+        T2 const& operator*() const { return d; }
+
+        operator T2&() { return d; }
+    };
+
+    MutexProtected() noexcept(std::is_nothrow_constructible_v<T>)
+        requires std::default_initializable<T>
+    = default;
+
+    MutexProtected(T t) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::move_constructible<T>
+    : d(std::move(t)) {}
+
+    MutexProtected(T const& t) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(std::copy_constructible<T> && !std::move_constructible<T>)
+    : d(t) {}
+
+    template <typename... Args>
+    MutexProtected(Args&&... args) noexcept(
+        std::is_nothrow_constructible_v<T, Args...>)
+        requires(std::constructible_from<T, Args...>)
+    : d(std::forward<Args>(args)...) {}
+
+    decltype(auto) read_only_access() const {
+        if constexpr (ShareLockable<L>) {
+            return ProtectedData<std::shared_lock, std::add_const_t<T>>(d, mut);
+        } else {
+            return ProtectedData<std::unique_lock, std::add_const_t<T>>(d, mut);
+        }
+    }
+
+    decltype(auto) access() const { return read_only_access(); }
+
+    decltype(auto) access() {
+        return ProtectedData<std::unique_lock, T>(d, mut);
+    }
+};
+
+template <typename T>
+struct AtomicProtected {
+    std::atomic<T> d{};
+
+    template <typename T2>
+    struct ProtectedData {
+        T2& d;
+
+        ProtectedData(T2& d) : d(d) {}
+
+        ProtectedData(ProtectedData const&) = delete;
+        ProtectedData(ProtectedData&& pd) { d = std::move(pd.d); }
+
+        ProtectedData& operator=(ProtectedData const&) = delete;
+        ProtectedData& operator=(ProtectedData&& pd) { d = std::move(pd.d); }
+
+        T2& operator->() { return d; }
+
+        T2 const& operator->() const { return d; }
+
+        T2& operator*() { return d; }
+
+        T2 const& operator*() const { return d; }
+
+        operator T2&() { return d; }
+    };
+
+    AtomicProtected() noexcept(std::is_nothrow_constructible_v<T>)
+        requires std::default_initializable<T>
+    = default;
+
+    AtomicProtected(T t) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::move_constructible<T>
+    : d(std::move(t)) {}
+
+    AtomicProtected(T const& t) noexcept(
+        std::is_nothrow_copy_constructible_v<T>)
+        requires(std::copy_constructible<T> && !std::move_constructible<T>)
+    : d(t) {}
+
+    template <typename... Args>
+    AtomicProtected(Args&&... args) noexcept(
+        std::is_nothrow_constructible_v<T, Args...>)
+        requires(std::constructible_from<T, Args...>)
+    : d(std::forward<Args>(args)...) {}
+
+    decltype(auto) read_only_access() const {
+        return ProtectedData<
+            std::add_lvalue_reference_t<std::add_const_t<std::atomic<T>>>>(d);
+    }
+
+    decltype(auto) access() const { return read_only_access(); }
+
+    decltype(auto) access() {
+        return ProtectedData<std::add_lvalue_reference_t<std::atomic<T>>>(d);
+    }
+};
+
+template <typename T, Lockable L = std::mutex>
+struct Protected final : public MutexProtected<T, L> {
+    Protected() noexcept(std::is_nothrow_constructible_v<T>)
+        requires std::default_initializable<T>
+    = default;
+
+    Protected(T t) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::move_constructible<T>
+    : MutexProtected<T, L>(std::move(t)) {}
+
+    Protected(T const& t) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires(std::copy_constructible<T> && !std::move_constructible<T>)
+    : MutexProtected<T, L>(t) {}
+
+    template <typename... Args>
+    Protected(Args&&... args) noexcept(
+        std::is_nothrow_constructible_v<T, Args...>)
+        requires(std::constructible_from<T, Args...>)
+    : MutexProtected<T, L>(std::forward<Args>(args)...) {}
+
+    // template<typename F>
+    // decltype(auto) operator->*(F f)
+    // {
+    //     static_assert(std::invocable<F>);
+    //     return access().operator->(f);
+    // }
+    // T const& current() const {
+    //     return *read_only_access();
+    // }
+
+    // Protected& operator=(const T& t)
+    //     requires std::copyable<T>
+    // {
+    //     *access() = t;
+    //     return *this;
+    // }
+
+    // Protected& operator=(T&& t)
+    //     requires std::movable<T>
+    // {
+    //     *access() = std::move(t);
+    //     return *this;
+    // }
+
+    // template <typename Dest>
+    // operator Dest()
+    //     requires static_castable<T, Dest>
+    // {
+    //     return static_cast<Dest>(*read_only_access());
+    // }
+
+    // template <typename Dest>
+    // explicit operator Dest() const
+    //     requires static_castable<T, Dest>
+    // {
+    //     return static_cast<Dest>(*read_only_access());
+    // }
+
+    // template<typename U>
+    // requires std::equality_comparable_with<T, U>
+    // auto operator==(U const& u) const
+    // {
+    //     return *read_only_access() == u;
+    // }
+
+    // template<typename F>
+    // Protected& safe_update(F&& f)
+    // noexcept(noexcept(std::is_nothrow_invocable_v<F, T&>)) requires
+    // (std::invocable<F, T&>)
+    // {
+    //     auto a = access();
+    //     std::invoke(std::forward<F>(f), *a);
+    //     return *this;
+    // }
+};
+
+#include <stdio.h>
+
+int main() {
+    Protected<std::unique_ptr<int>, std::shared_mutex> hello(
+        std::make_unique<int>(4));
+
+    // Protected<int, std::shared_mutex> const hello2 {4};
+    // Protected<int, std::shared_mutex> const hello4 {std::move(hello2)};
+    // auto world = std::make_unique<int>(4);
+    // Protected<std::unique_ptr<int>> hello3 (std::move(world));
+    // hello = std::make_unique<int>(3);
+    // world = std::make_unique<int>(3);
+
+    // return *hello2.read_only_access();
+    // {
+    //     auto r = hello.access();
+    //     // r = 7;
+    // }
+
+    // hello.safe_update([](auto& v) {
+    //     *v*=2;
+    // });
+
+    // // hello.safe_update(std::make_unique<int>);
+
+    // if (hello.current()) {
+    //     auto const& r = hello.read_only_access();
+    //     if (*r)
+    //     return *(*r);
+    //     else return 0;
+    // }
+    // auto const& a = std::move(hello.current());
+    // return *a;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/// PROJECT 6
+
+// Possible implemienation with possible impl for PROJECT 5
+// https://stackoverflow.com/questions/36619715/a-shared-recursive-mutex-in-standard-c
+struct recursive_shared_mtx
+{
+
+}
+
+
+
+/// PROJECT 7
+
+// threadpool that returns a token of task with a completion/cancellation
+// or a la jthread, a cancelleable_token
+// Users should be able to close themself and only themself safely
+
+
+
+
+/// PROJECT 8
+#include <variant>
+
+namespace core_tech {
+template <typename T>
+struct is_variant : std::false_type {};
+
+template <typename... Args>
+struct is_variant<std::variant<Args...>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_variant_v = is_variant<T>::value;
+
+template <typename T>
+concept variant_t = is_variant_v<T>;
+
+namespace details {
+
+template <typename SubType, typename VariantType,
+          auto pos = std::variant_size_v<VariantType>>
+    requires is_variant_v<VariantType>
+[[nodiscard]] consteval bool is_in_variant_impl() noexcept {
+    if constexpr (std::same_as<SubType, std::variant_alternative_t<
+                                            pos - 1, VariantType>>) {
+        return true;
+    }
+
+    if constexpr (pos > 1) {
+        return is_in_variant_impl<SubType, VariantType, pos - 1>();
+    }
+
+    return false;
+}
+
+}  // namespace details
+
+template <typename T1, typename T2, typename T10 = std::remove_cvref_t<T1>,
+          typename T20 = std::remove_cvref_t<T2>>
+concept is_in_variant = (is_variant_v<T20> &&
+                         details::is_in_variant_impl<T1, T20>()) ||
+                        (is_variant_v<T10> &&
+                         details::is_in_variant_impl<T2, T10>());
+
+}  // namespace core_tech
+
+template <typename D, typename... Ts>
+struct variant_enum : public D {
+    using type_t = std::variant<Ts...>;
+
+    constexpr variant_enum() = default;
+
+    constexpr variant_enum(variant_enum const& other) noexcept = default;
+    constexpr variant_enum(variant_enum&& other) noexcept = default;
+
+    constexpr variant_enum(
+        core_tech::is_in_variant<type_t> auto const& other) noexcept {
+        type = type_t{other};
+    }
+
+    constexpr variant_enum(
+        core_tech::is_in_variant<type_t> auto&& other) noexcept {
+        type = type_t{other};
+    }
+
+    constexpr variant_enum& operator=(
+        core_tech::is_in_variant<type_t> auto const& other) noexcept {
+        type = other;
+        return *this;
+    }
+
+    constexpr variant_enum& operator=(
+        core_tech::is_in_variant<type_t> auto&& other) noexcept {
+        type = CORE_FWD(other);
+        return *this;
+    }
+
+    constexpr variant_enum& operator=(variant_enum const& other) noexcept =
+        default;
+
+    constexpr variant_enum& operator=(variant_enum&& other) noexcept = default;
+
+    constexpr variant_enum& operator=(type_t const& other) noexcept {
+        type = other;
+        return *this;
+    }
+
+    constexpr variant_enum& operator=(type_t&& other) noexcept {
+        type = other;
+        return *this;
+    }
+
+    template <core_tech::is_in_variant<type_t> T>
+    [[nodiscard]] constexpr bool operator==(T const&) const noexcept {
+        return std::holds_alternative<T>(type);
+    }
+
+    [[nodiscard]] constexpr bool operator==(
+        variant_enum const& other) const noexcept {
+        return this->type.index() == other.type.index();
+    }
+
+    [[nodiscard]] static constexpr bool is_deep_equal(
+        variant_enum const& lhv, variant_enum const& rhv) noexcept {
+        return lhv.type == rhv.type;
+    }
+
+    type_t type;
+};
+
+struct type_1 {
+    constexpr bool operator==(type_1 const& ) const
+    {
+        return true;
+    }
+};
+struct type_2 {
+    int i = 3;
+    constexpr bool operator==(type_2 const& other) const
+    {
+        return this->i == other.i;
+    }
+};
+struct type_3 {
+    int i{};
+    constexpr bool operator==(type_3 const& other) const
+    {
+        return this->i == other.i;
+    }
+};
+
+struct StrongNames {
+    static inline constexpr type_1 t_1{};
+    static inline constexpr type_2 t_2{};
+    static inline constexpr type_3 t_3{4};
+    static inline constexpr type_3 t_4{5};
+};
+
+using type_1_2_3_enumVar = variant_enum<StrongNames, type_1, type_2, type_3>;
+
+static_assert(type_1_2_3_enumVar::is_deep_equal(type_1_2_3_enumVar::t_4,
+                                                type_3{5}));
+
